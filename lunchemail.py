@@ -1,7 +1,9 @@
+#!/usr/bin/env python3
 """
 Send out email for Friday's lunch.
 """
 import argparse
+import appdirs
 import datetime
 import pathlib
 import smtplib
@@ -11,6 +13,9 @@ import urllib.request
 from email.message import EmailMessage
 from string import Template
 from ruamel.yaml import YAML, YAMLError
+import os.path
+
+APP_NAME = "lunchemail"
 
 
 def load_yaml(fname: str) -> dict:
@@ -24,7 +29,7 @@ def load_yaml(fname: str) -> dict:
             necessary to format and to send the data. See the config.yaml
             example file for expected keys and documentation.
     """
-    cfg = YAML(typ='safe')
+    cfg = YAML(typ="safe")
     try:
         data = cfg.load(pathlib.Path(fname))
     except YAMLError as exc:
@@ -52,9 +57,9 @@ def get_lunch_location(url: str, date: str) -> str:
     """
     data = urllib.request.urlopen(url)
     for line in data:
-        desc = line.decode('utf-8')  # 'line' is a bytestring.
+        desc = line.decode("utf-8")  # 'line' is a bytestring.
         if desc.startswith(date):
-            return desc[len(date):].strip()
+            return desc[len(date) :].strip()
     return None
 
 
@@ -66,7 +71,9 @@ def find_next_friday() -> str:
     """
     today = datetime.date.today()
     current_weekday = today.weekday()
-    days_ahead = (4 - current_weekday) % 7  # 4 represents Friday (Monday is 0).
+    days_ahead = (
+        4 - current_weekday
+    ) % 7  # 4 represents Friday (Monday is 0).
     next_friday = today + datetime.timedelta(days=days_ahead)
     return str(next_friday)
 
@@ -80,14 +87,20 @@ def send_ssl_email(cfg: dict, body: str):
     """
     msg = EmailMessage()
     msg["to"] = cfg["to"]
-    msg["from"] = cfg["user"]
-    msg['Subject'] = cfg["subject"]
+    msg["from"] = cfg["from"]
+    msg["subject"] = cfg["subject"]
     msg.set_content(body)
     ctx = ssl.create_default_context()
     with smtplib.SMTP_SSL(cfg["server"], cfg["port"], context=ctx) as smtp:
         smtp.login(cfg["user"], cfg["pwd"])
         smtp.send_message(msg)
-        print('Email sent!!')
+        print("Email sent!!")
+
+
+def get_default_config_file() -> str:
+    config_dir = appdirs.user_config_dir(APP_NAME)
+    config_path = os.path.join(config_dir, APP_NAME + ".yaml")
+    return config_path
 
 
 def get_args():
@@ -97,27 +110,46 @@ def get_args():
     Returns:
         Arguments object
     """
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(
+        description="Send an email with next Friday's lunch location.",
+        epilog="Uses default config path if no file path is supplied.",
+    )
 
-    p.add_argument('config_file', type=str, help='path of configuration file')
+    p.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default=get_default_config_file(),
+        help="path of configuration file",
+    )
+    p.add_argument(
+        "--dry-run",
+        default=False,
+        action="store_true",
+        help="Just print what would be sent and exit without sending",
+    )
     args = p.parse_args()
     return args
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = get_args()
-    cfg = load_yaml(args.config_file)
-    print(cfg['to'])
+    cfg = load_yaml(args.config)
+    print(f'Sending to {cfg["to"]}')
+    print("-----------------")
     data = {}  # Holds entries that may be used from the template in config.
-    data['date'] = find_next_friday()
-    uri = cfg['lunchfile']
-    data['loc'] = get_lunch_location(uri, data['date'])
-    if data['loc'] != None:
-        t = Template(cfg['template'])
+    data["date"] = find_next_friday()
+    uri = cfg["lunchfile"]
+    data["loc"] = get_lunch_location(uri, data["date"])
+    if data["loc"] != None:
+        t = Template(cfg["body"])
         body = t.substitute(data)
         print(body)
-        send_ssl_email(cfg, body)
+        if args.dry_run:
+            print("Dry run only - mail not sent.")
+        else:
+            send_ssl_email(cfg, body)
     else:
         print(f'Cannot find date {data["date"]} at beginning of a line')
-        print(f'in {uri}. Lunch message NOT sent!!!!')
+        print(f"in {uri}. Lunch message NOT sent!!!!")
         exit()

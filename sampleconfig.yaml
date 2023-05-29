@@ -1,31 +1,31 @@
 # Configuration file for sending lunch email messages. This is set up to use
 # simple username/password authentication where the password can be a normal
-# password or an app password generated for Gmail.
+# password or an app password generated for Gmail. The program currently uses
+# SMTP_SSL for the connection.
 
 # If different authentication is needed then the program will have to be
 # altered along with adding the appropriate configuration items in this file.
 
+#-------------
 # Server connection/login info
 server: "smtp.gmail.com"
 port: "465"  # SSL
-# 'user' contains the login/email name for the user. This item is also used in
-# "From:" email line. Gmail uses the same for both.
+# Login user name for mail server
 user: "MY_USER@gmail.com"
-# 'pwd' contains a password for the user.
+# User or app password for mail account.
 pwd: "MY_GMAIL_APP_PASSWORD"
 
 
-
-# 'to' contains a list of email addresses to be used on the 'To' line.
-to: 
+#-------------
+# Email fields:
+from: "MY NAME <MY_USER@gmail.com"
+to: # list of addresses
   - "user1@gmail.com"
   - "user2@comcast.net"
-
 subject: "Lunch Friday"
-
-# 'template' should contain text to be used as a Python template for the
-# body of the message. Current values in the dict used are 'date' and 'loc'.
-template: |
+# 'body' is used as a Python Template. Currently $date and $loc are the two
+# values that will be replaced with values from the data file.
+body: | 
   All,
   
   Lunch Friday ($date) will be at $loc, 11:15.
@@ -33,7 +33,9 @@ template: |
   See you there!
   Mike
 
-# 'lunchfile' contains a URI to the file
+
+#-------------
+# 'lunchfile' contains a URI to the file.
 # E.g., "https://someserveraddress/filelocation" or
 # "file:localfilelocation"
 lunchfile: "file:/workspaces/LunchPython/lunch.txt"

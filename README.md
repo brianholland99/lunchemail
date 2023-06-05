@@ -6,8 +6,12 @@ lunch for Friday.
 
 See comments in 'sampleconfig.yaml' describing configuration options.
 
-Install additional packages:
-pip install -r requirements.txt
+## Installation
 
+  python -m venv venv
+  . venv/bin/activate
+  pip install .
 
-"./lunchemail.py -h" to see usage.
+## Running
+
+lunchemail

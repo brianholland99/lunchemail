@@ -1,0 +1,7 @@
+.devcontainer
+.mypy_cache
+.ruff_cache
+.venv
+lunchemail.egg-info
+venv
+build

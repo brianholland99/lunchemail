@@ -3,8 +3,8 @@
 Send out email for Friday's lunch.
 """
 import argparse
-import appdirs
 import datetime
+import os.path
 import pathlib
 import smtplib
 import ssl
@@ -12,8 +12,9 @@ import sys
 import urllib.request
 from email.message import EmailMessage
 from string import Template
+
+import appdirs
 from ruamel.yaml import YAML, YAMLError
-import os.path
 
 APP_NAME = "lunchemail"
 
@@ -60,7 +61,7 @@ def get_lunch_location(url: str, date: str) -> str:
         desc = line.decode("utf-8")  # 'line' is a bytestring.
         if desc.startswith(date):
             return desc[len(date) :].strip()
-    return None
+    return ""
 
 
 def find_next_friday() -> str:
@@ -132,7 +133,7 @@ def get_args():
     return args
 
 
-if __name__ == "__main__":
+def main():
     args = get_args()
     cfg = load_yaml(args.config)
     print(f'Sending to {cfg["to"]}')
@@ -141,7 +142,7 @@ if __name__ == "__main__":
     data["date"] = find_next_friday()
     uri = cfg["lunchfile"]
     data["loc"] = get_lunch_location(uri, data["date"])
-    if data["loc"] != None:
+    if data["loc"] is not None:
         t = Template(cfg["body"])
         body = t.substitute(data)
         print(body)
@@ -153,3 +154,7 @@ if __name__ == "__main__":
         print(f'Cannot find date {data["date"]} at beginning of a line')
         print(f"in {uri}. Lunch message NOT sent!!!!")
         exit()
+
+
+if __name__ == "__main__":
+    main()
